@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate Icons for Scam Shield</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #1565c0;
+    }
+    .info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scam Shield Icon Generator</h1>
+  <div class="info">
+    <p>Click the button below to generate placeholder icons for the extension.</p>
+    <p>These will be simple blue shield icons. For production, you may want to create more polished icons.</p>
+  </div>
+  
+  <button onclick="generateIcons()">Generate Icons</button>
+  <div id="status"></div>
+  
+  <script>
+    function generateIcons() {
+      const sizes = [16, 48, 128];
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = '<p>Generating icons...</p>';
+      
+      sizes.forEach(size => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        // Draw a simple shield shape
+        ctx.fillStyle = '#1976d2';
+        ctx.beginPath();
+        
+        // Shield shape (simplified)
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const width = size * 0.7;
+        const height = size * 0.8;
+        
+        // Top curve
+        ctx.moveTo(centerX, centerY - height/2);
+        ctx.bezierCurveTo(
+          centerX - width/2, centerY - height/2,
+          centerX - width/2, centerY - height/4,
+          centerX - width/2, centerY
+        );
+        // Left side
+        ctx.lineTo(centerX - width/2, centerY + height/4);
+        // Bottom curve
+        ctx.bezierCurveTo(
+          centerX - width/2, centerY + height/2,
+          centerX, centerY + height/2,
+          centerX, centerY + height/2
+        );
+        // Right side
+        ctx.bezierCurveTo(
+          centerX, centerY + height/2,
+          centerX + width/2, centerY + height/2,
+          centerX + width/2, centerY + height/4
+        );
+        ctx.lineTo(centerX + width/2, centerY);
+        // Top right
+        ctx.bezierCurveTo(
+          centerX + width/2, centerY - height/4,
+          centerX + width/2, centerY - height/2,
+          centerX, centerY - height/2
+        );
+        
+        ctx.fill();
+        
+        // Add a checkmark for safety
+        if (size >= 48) {
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = size / 16;
+          ctx.beginPath();
+          ctx.moveTo(centerX - width/4, centerY);
+          ctx.lineTo(centerX - width/8, centerY + height/8);
+          ctx.lineTo(centerX + width/4, centerY - height/8);
+          ctx.stroke();
+        }
+        
+        // Convert to blob and download
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `shield-${size}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      });
+      
+      setTimeout(() => {
+        statusDiv.innerHTML = '<p style="color: green;">✓ Icons generated! Check your downloads folder and move them to the icons/ directory.</p>';
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
+

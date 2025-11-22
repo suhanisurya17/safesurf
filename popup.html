@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scam Shield</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="shield-icon">🛡️</div>
+        <div class="header-text">
+          <h1>Scam Shield</h1>
+          <p class="tagline">Protecting you online</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="expandBtn" title="Expand">⛶</button>
+        <button class="icon-btn" id="closeBtn" title="Close">✕</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="current-page">Current Page</button>
+      <button class="tab" data-tab="safety-tips">Safety Tips</button>
+    </div>
+
+    <!-- Current Page Tab Content -->
+    <div class="tab-content active" id="current-page-content">
+      <button class="scan-button" id="scanBtn">Scan This Page</button>
+      
+      <div class="scan-result" id="scanResult" style="display: none;">
+        <div class="result-icon">✓</div>
+        <div class="result-content">
+          <div class="result-header">
+            <span class="result-text" id="resultText">Looks Safe</span>
+            <span class="result-badge" id="resultBadge">SAFE</span>
+          </div>
+          <p class="result-message" id="resultMessage">No obvious scam indicators found on this page.</p>
+          <p class="result-url" id="resultUrl"></p>
+        </div>
+      </div>
+
+      <div class="recent-scans">
+        <h2>Recent Scans</h2>
+        <div class="scans-list" id="scansList">
+          <!-- Recent scans will be populated here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Safety Tips Tab Content -->
+    <div class="tab-content" id="safety-tips-content">
+      <div class="tips-section">
+        <div class="tip-item">
+          <div class="tip-icon email-icon">✉</div>
+          <div class="tip-content">
+            <h3>Email Scams</h3>
+            <ul>
+              <li>Be wary of urgent requests for money</li>
+              <li>Check sender's email address carefully</li>
+              <li>Don't click suspicious links</li>
+              <li>Banks never ask for passwords via email</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tip-item">
+          <div class="tip-icon website-icon">🌐🔒</div>
+          <div class="tip-content">
+            <h3>Website Safety</h3>
+            <ul>
+              <li>Look for "https://" in the URL</li>
+              <li>Check for spelling errors in the domain</li>
+              <li>Beware of "too good to be true" offers</li>
+              <li>Don't enter personal info on suspicious sites</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tip-item">
+          <div class="tip-icon general-icon">ℹ</div>
+          <div class="tip-content">
+            <h3>General Tips</h3>
+            <ul>
+              <li>When in doubt, don't click or respond</li>
+              <li>Verify information through official channels</li>
+              <li>Never share personal information with strangers</li>
+              <li>Keep your software and browser updated</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

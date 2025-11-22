@@ -1,0 +1,401 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  min-height: 500px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #f5f5f5;
+}
+
+.container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shield-icon {
+  font-size: 32px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e3f2fd;
+  border-radius: 8px;
+}
+
+.header-text h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.tagline {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.icon-btn:hover {
+  background: #f0f0f0;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  background: white;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #f0f0f0;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab.active {
+  background: white;
+  color: #1a1a1a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tab:hover:not(.active) {
+  background: #e8e8e8;
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+  padding: 20px;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Scan Button */
+.scan-button {
+  width: 100%;
+  padding: 14px;
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 20px;
+}
+
+.scan-button:hover {
+  background: #333;
+}
+
+.scan-button:active {
+  transform: scale(0.98);
+}
+
+/* Scan Result */
+.scan-result {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border: 2px solid #4caf50;
+  border-radius: 12px;
+  background: #f1f8f4;
+  margin-bottom: 24px;
+}
+
+.scan-result.warning {
+  border-color: #ff9800;
+  background: #fff8f0;
+}
+
+.scan-result.danger {
+  border-color: #f44336;
+  background: #ffebee;
+}
+
+.result-icon {
+  font-size: 32px;
+  color: #4caf50;
+  font-weight: bold;
+  min-width: 32px;
+}
+
+.scan-result.warning .result-icon {
+  color: #ff9800;
+}
+
+.scan-result.danger .result-icon {
+  color: #f44336;
+}
+
+.result-content {
+  flex: 1;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.result-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.result-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: #4caf50;
+  color: white;
+}
+
+.scan-result.warning .result-badge {
+  background: #ff9800;
+}
+
+.scan-result.danger .result-badge {
+  background: #f44336;
+}
+
+.result-message {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.result-url {
+  font-size: 12px;
+  color: #999;
+  word-break: break-all;
+  font-family: monospace;
+}
+
+/* Recent Scans */
+.recent-scans {
+  margin-top: 24px;
+}
+
+.recent-scans h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.scans-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scan-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.scan-item:hover {
+  background: #f0f0f0;
+}
+
+.scan-item-icon {
+  font-size: 20px;
+  color: #4caf50;
+  min-width: 20px;
+}
+
+.scan-item.warning .scan-item-icon {
+  color: #ff9800;
+}
+
+.scan-item.danger .scan-item-icon {
+  color: #f44336;
+}
+
+.scan-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.scan-item-url {
+  font-size: 13px;
+  color: #333;
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+
+.scan-item-time {
+  font-size: 11px;
+  color: #999;
+}
+
+.scan-item-badge {
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: lowercase;
+  background: #666;
+  color: white;
+  white-space: nowrap;
+}
+
+.scan-item.safe .scan-item-badge {
+  background: #4caf50;
+}
+
+.scan-item.warning .scan-item-badge {
+  background: #ff9800;
+}
+
+.scan-item.danger .scan-item-badge {
+  background: #f44336;
+}
+
+/* Safety Tips */
+.tips-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tip-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f8f8;
+  border-radius: 12px;
+}
+
+.tip-icon {
+  font-size: 32px;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.email-icon {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.website-icon {
+  background: #e8f5e9;
+  color: #4caf50;
+}
+
+.general-icon {
+  background: #f3e5f5;
+  color: #9c27b0;
+}
+
+.tip-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.tip-content ul {
+  list-style: none;
+  padding: 0;
+}
+
+.tip-content li {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.tip-content li:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #999;
+  font-weight: bold;
+}
+
+/* Loading State */
+.scan-button.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.scan-button.loading:after {
+  content: "...";
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: "."; }
+  40% { content: ".."; }
+  60%, 100% { content: "..."; }
+}
+
