@@ -2,14 +2,114 @@
 
 // Listen for scan requests from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Ping response - confirms content script is loaded
+  if (request.action === 'ping') {
+    sendResponse({ status: 'ready' });
+    return true;
+  }
+
+  // Scan page request
   if (request.action === 'scanPage') {
-    const result = analyzePage();
-    sendResponse(result);
+    analyzePageWithAI().then(result => {
+      sendResponse(result);
+    }).catch(error => {
+      console.error('Analysis error:', error);
+      sendResponse({
+        status: 'error',
+        message: 'Failed to analyze page',
+        url: window.location.href
+      });
+    });
     return true; // Keep channel open for async response
   }
 });
 
-// Main page analysis function
+// Main page analysis function with AI
+async function analyzePageWithAI() {
+  const url = window.location.href;
+  const indicators = {
+    suspicious: [],
+    warnings: [],
+    safe: []
+  };
+
+  // Run rule-based detection
+  checkUrl(url, indicators);
+  checkContent(indicators);
+  checkSecurity(url, indicators);
+  checkScamPatterns(indicators);
+
+  // Determine rule-based status
+  const ruleBasedStatus = determineStatus(indicators);
+
+  // Try AI analysis if enabled
+  let aiResult = null;
+  if (CONFIG.USE_AI_ANALYSIS) {
+    const pageData = extractPageData();
+    aiResult = await aiService.analyzePage(pageData);
+  }
+
+  // Combine results
+  const finalResult = combineResults(ruleBasedStatus, indicators, aiResult, url);
+
+  return finalResult;
+}
+
+// Extract page data for AI analysis
+function extractPageData() {
+  const url = window.location.href;
+  const title = document.title;
+  const bodyText = document.body ? document.body.innerText : '';
+
+  // Limit content length
+  const content = bodyText.substring(0, CONFIG.MAX_CONTENT_LENGTH);
+
+  return { url, title, content };
+}
+
+// Combine rule-based and AI results
+function combineResults(ruleBasedStatus, indicators, aiResult, url) {
+  // If AI analysis succeeded, use it as primary
+  if (aiResult && aiResult.usedAI && !aiResult.fallback) {
+    return {
+      status: aiResult.riskLevel,
+      message: buildAIMessage(aiResult, indicators),
+      url,
+      indicators: indicators.suspicious.length + indicators.warnings.length,
+      aiAnalysis: {
+        confidence: aiResult.confidence,
+        explanation: aiResult.explanation,
+        recommendations: aiResult.recommendations,
+        aiIndicators: aiResult.indicators
+      },
+      usedAI: true
+    };
+  }
+
+  // Fallback to rule-based
+  return {
+    status: ruleBasedStatus,
+    message: generateMessage(indicators, ruleBasedStatus),
+    url,
+    indicators: indicators.suspicious.length + indicators.warnings.length,
+    usedAI: false,
+    aiError: aiResult?.error || null
+  };
+}
+
+// Build message incorporating AI analysis
+function buildAIMessage(aiResult, ruleIndicators) {
+  let message = `AI Analysis (${aiResult.confidence}% confidence): ${aiResult.explanation}`;
+
+  // Add rule-based indicators if any
+  if (ruleIndicators.suspicious.length > 0 || ruleIndicators.warnings.length > 0) {
+    message += `\n\nAdditional indicators found: ${ruleIndicators.suspicious.length + ruleIndicators.warnings.length}`;
+  }
+
+  return message;
+}
+
+// Main page analysis function (legacy, now used as fallback)
 function analyzePage() {
   const url = window.location.href;
   const indicators = {
@@ -17,23 +117,23 @@ function analyzePage() {
     warnings: [],
     safe: []
   };
-  
+
   // Check URL for suspicious patterns
   checkUrl(url, indicators);
-  
+
   // Check page content
   checkContent(indicators);
-  
+
   // Check for SSL/HTTPS
   checkSecurity(url, indicators);
-  
+
   // Check for common scam patterns
   checkScamPatterns(indicators);
-  
+
   // Determine overall status
   const status = determineStatus(indicators);
   const message = generateMessage(indicators, status);
-  
+
   return {
     status,
     message,

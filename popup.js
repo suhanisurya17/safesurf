@@ -20,34 +20,96 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   const scanBtn = document.getElementById('scanBtn');
   scanBtn.classList.add('loading');
   scanBtn.disabled = true;
-  
+
   try {
     // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
+
+    // Check if URL is scannable
+    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://')) {
+      throw new Error('Cannot scan browser internal pages');
+    }
+
+    // Check if URL is a new tab page or file:// URL
+    if (tab.url.startsWith('about:') || tab.url.startsWith('file://')) {
+      throw new Error('Cannot scan this type of page');
+    }
+
+    // Try to inject content scripts if not already loaded
+    try {
+      await ensureContentScriptLoaded(tab.id);
+    } catch (injectionError) {
+      console.warn('Script injection failed:', injectionError);
+      throw new Error('Please refresh the page and try again');
+    }
+
     // Send message to content script to scan the page
     const result = await chrome.tabs.sendMessage(tab.id, { action: 'scanPage' });
-    
+
     // Display result
     displayScanResult(result);
-    
+
     // Save to recent scans
     await saveRecentScan(tab.url, result);
-    
+
     // Update recent scans list
     loadRecentScans();
   } catch (error) {
     console.error('Scan error:', error);
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    let errorMessage = 'Unable to scan this page.';
+
+    if (error.message === 'Cannot scan browser internal pages') {
+      errorMessage = 'Cannot scan browser internal pages.';
+    } else if (error.message === 'Cannot scan this type of page') {
+      errorMessage = 'Cannot scan this type of page.';
+    } else if (error.message.includes('refresh')) {
+      errorMessage = 'Please refresh the page and try again.';
+    } else if (error.message.includes('Receiving end does not exist')) {
+      errorMessage = 'Content script not loaded. Please refresh the page.';
+    }
+
     displayScanResult({
       status: 'error',
-      message: 'Unable to scan this page. Please try again.',
-      url: 'Unknown'
+      message: errorMessage,
+      url: tab?.url || 'Unknown'
     });
   } finally {
     scanBtn.classList.remove('loading');
     scanBtn.disabled = false;
   }
 });
+
+// Ensure content scripts are loaded
+async function ensureContentScriptLoaded(tabId) {
+  try {
+    // Try to ping the content script
+    await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+  } catch (error) {
+    // Content script not loaded, inject it
+    console.log('Injecting content scripts...');
+
+    // Inject scripts in order
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['config.js']
+    });
+
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['ai-service.js']
+    });
+
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['content.js']
+    });
+
+    // Wait a bit for scripts to initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+}
 
 // Display scan result
 function displayScanResult(result) {
@@ -56,26 +118,26 @@ function displayScanResult(result) {
   const resultBadge = document.getElementById('resultBadge');
   const resultMessage = document.getElementById('resultMessage');
   const resultUrl = document.getElementById('resultUrl');
-  
+
   scanResult.style.display = 'flex';
   scanResult.className = 'scan-result';
-  
+
   if (result.status === 'safe') {
     scanResult.classList.add('safe');
     resultText.textContent = 'Looks Safe';
-    resultBadge.textContent = 'SAFE';
+    resultBadge.textContent = result.usedAI ? 'AI: SAFE' : 'SAFE';
     resultBadge.className = 'result-badge';
     resultMessage.textContent = result.message || 'No obvious scam indicators found on this page.';
   } else if (result.status === 'warning') {
     scanResult.classList.add('warning');
     resultText.textContent = 'Caution Advised';
-    resultBadge.textContent = 'WARNING';
+    resultBadge.textContent = result.usedAI ? 'AI: WARNING' : 'WARNING';
     resultBadge.className = 'result-badge';
     resultMessage.textContent = result.message || 'Some suspicious indicators found. Proceed with caution.';
   } else if (result.status === 'danger') {
     scanResult.classList.add('danger');
     resultText.textContent = 'Potential Scam';
-    resultBadge.textContent = 'DANGER';
+    resultBadge.textContent = result.usedAI ? 'AI: DANGER' : 'DANGER';
     resultBadge.className = 'result-badge';
     resultMessage.textContent = result.message || 'Multiple scam indicators detected. Avoid this page.';
   } else {
@@ -85,8 +147,52 @@ function displayScanResult(result) {
     resultBadge.className = 'result-badge';
     resultMessage.textContent = result.message || 'Unable to complete scan.';
   }
-  
+
   resultUrl.textContent = result.url || 'Unknown URL';
+
+  // Display AI analysis details if available
+  displayAIDetails(result);
+}
+
+// Display AI analysis details
+function displayAIDetails(result) {
+  // Remove existing AI details if any
+  const existingDetails = document.querySelector('.ai-details');
+  if (existingDetails) {
+    existingDetails.remove();
+  }
+
+  // Only show if AI was used
+  if (!result.usedAI || !result.aiAnalysis) {
+    return;
+  }
+
+  const scanResult = document.getElementById('scanResult');
+  const aiDetailsDiv = document.createElement('div');
+  aiDetailsDiv.className = 'ai-details';
+
+  let detailsHTML = '<div class="ai-section-title">🤖 AI Analysis</div>';
+
+  // Add indicators if present
+  if (result.aiAnalysis.aiIndicators && result.aiAnalysis.aiIndicators.length > 0) {
+    detailsHTML += '<div class="ai-subsection"><strong>Indicators Found:</strong><ul>';
+    result.aiAnalysis.aiIndicators.forEach(indicator => {
+      detailsHTML += `<li>${indicator}</li>`;
+    });
+    detailsHTML += '</ul></div>';
+  }
+
+  // Add recommendations if present
+  if (result.aiAnalysis.recommendations && result.aiAnalysis.recommendations.length > 0) {
+    detailsHTML += '<div class="ai-subsection"><strong>Recommendations:</strong><ul>';
+    result.aiAnalysis.recommendations.forEach(rec => {
+      detailsHTML += `<li>${rec}</li>`;
+    });
+    detailsHTML += '</ul></div>';
+  }
+
+  aiDetailsDiv.innerHTML = detailsHTML;
+  scanResult.appendChild(aiDetailsDiv);
 }
 
 // Save recent scan

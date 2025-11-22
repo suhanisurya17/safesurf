@@ -1,0 +1,30 @@
+# Environment variables (contains API keys)
+.env
+.env.local
+.env.*.local
+
+# Config file with API key
+config.js
+
+# Node modules
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+
+# Temporary files
+*.log
+*.tmp
