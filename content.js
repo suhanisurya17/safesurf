@@ -1,5 +1,28 @@
 // Content script for analyzing web pages
 
+// Wait for CONFIG and aiService to be available
+function waitForDependencies() {
+  return new Promise((resolve) => {
+    if (typeof CONFIG !== 'undefined' && typeof aiService !== 'undefined') {
+      resolve();
+    } else {
+      // Check every 50ms for dependencies
+      const checkInterval = setInterval(() => {
+        if (typeof CONFIG !== 'undefined' && typeof aiService !== 'undefined') {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 50);
+      
+      // Timeout after 2 seconds
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        resolve(); // Resolve anyway to prevent hanging
+      }, 2000);
+    }
+  });
+}
+
 // Listen for scan requests from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Ping response - confirms content script is loaded
@@ -10,13 +33,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   // Scan page request
   if (request.action === 'scanPage') {
-    analyzePageWithAI().then(result => {
-      sendResponse(result);
+    waitForDependencies().then(() => {
+      analyzePageWithAI().then(result => {
+        sendResponse(result);
+      }).catch(error => {
+        console.error('Analysis error:', error);
+        sendResponse({
+          status: 'error',
+          message: 'Failed to analyze page: ' + error.message,
+          url: window.location.href
+        });
+      });
     }).catch(error => {
-      console.error('Analysis error:', error);
+      console.error('Dependency wait error:', error);
       sendResponse({
         status: 'error',
-        message: 'Failed to analyze page',
+        message: 'Extension not fully loaded. Please refresh the page.',
         url: window.location.href
       });
     });
@@ -42,11 +74,22 @@ async function analyzePageWithAI() {
   // Determine rule-based status
   const ruleBasedStatus = determineStatus(indicators);
 
-  // Try AI analysis if enabled
+  // Try AI analysis if enabled and available
   let aiResult = null;
-  if (CONFIG.USE_AI_ANALYSIS) {
-    const pageData = extractPageData();
-    aiResult = await aiService.analyzePage(pageData);
+  if (typeof CONFIG !== 'undefined' && CONFIG.USE_AI_ANALYSIS && typeof aiService !== 'undefined') {
+    try {
+      const pageData = extractPageData();
+      aiResult = await aiService.analyzePage(pageData);
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+      aiResult = {
+        usedAI: false,
+        error: error.message,
+        fallback: true
+      };
+    }
+  } else {
+    console.log('AI analysis not available - using rule-based only');
   }
 
   // Combine results
@@ -58,11 +101,25 @@ async function analyzePageWithAI() {
 // Extract page data for AI analysis
 function extractPageData() {
   const url = window.location.href;
-  const title = document.title;
-  const bodyText = document.body ? document.body.innerText : '';
+  const title = document.title || 'Untitled Page';
+  
+  // Get body text, handling cases where body might not be ready
+  let bodyText = '';
+  try {
+    if (document.body) {
+      bodyText = document.body.innerText || document.body.textContent || '';
+    } else {
+      // Fallback: try to get text from document
+      bodyText = document.documentElement.innerText || document.documentElement.textContent || '';
+    }
+  } catch (e) {
+    console.warn('Error extracting page content:', e);
+    bodyText = '';
+  }
 
   // Limit content length
-  const content = bodyText.substring(0, CONFIG.MAX_CONTENT_LENGTH);
+  const maxLength = (typeof CONFIG !== 'undefined' && CONFIG.MAX_CONTENT_LENGTH) ? CONFIG.MAX_CONTENT_LENGTH : 5000;
+  const content = bodyText.substring(0, maxLength);
 
   return { url, title, content };
 }

@@ -44,7 +44,19 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
     }
 
     // Send message to content script to scan the page
-    const result = await chrome.tabs.sendMessage(tab.id, { action: 'scanPage' });
+    let result;
+    try {
+      result = await chrome.tabs.sendMessage(tab.id, { action: 'scanPage' });
+    } catch (sendError) {
+      // If sendMessage fails, try injecting again
+      if (sendError.message && sendError.message.includes('Receiving end does not exist')) {
+        console.log('Retrying script injection...');
+        await ensureContentScriptLoaded(tab.id);
+        result = await chrome.tabs.sendMessage(tab.id, { action: 'scanPage' });
+      } else {
+        throw sendError;
+      }
+    }
 
     // Display result
     displayScanResult(result);
@@ -64,10 +76,12 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
       errorMessage = 'Cannot scan browser internal pages.';
     } else if (error.message === 'Cannot scan this type of page') {
       errorMessage = 'Cannot scan this type of page.';
-    } else if (error.message.includes('refresh')) {
+    } else if (error.message.includes('refresh') || error.message.includes('inject')) {
       errorMessage = 'Please refresh the page and try again.';
     } else if (error.message.includes('Receiving end does not exist')) {
       errorMessage = 'Content script not loaded. Please refresh the page.';
+    } else if (error.message) {
+      errorMessage = error.message;
     }
 
     displayScanResult({
@@ -85,29 +99,55 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
 async function ensureContentScriptLoaded(tabId) {
   try {
     // Try to ping the content script
-    await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+    const pingResponse = await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+    if (pingResponse && pingResponse.status === 'ready') {
+      return; // Content script is loaded
+    }
   } catch (error) {
-    // Content script not loaded, inject it
+    // Content script not loaded or not responding, inject it
     console.log('Injecting content scripts...');
+  }
 
-    // Inject scripts in order
+  // Content script not loaded, inject it
+  try {
+    // Inject scripts in order - critical for dependencies
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
       files: ['config.js']
     });
+
+    // Small delay to ensure CONFIG is available
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
       files: ['ai-service.js']
     });
 
+    // Small delay to ensure aiService is available
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
       files: ['content.js']
     });
 
-    // Wait a bit for scripts to initialize
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for scripts to initialize and verify they're ready
+    await new Promise(resolve => setTimeout(resolve, 150));
+    
+    // Verify content script is ready
+    try {
+      const verifyResponse = await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+      if (!verifyResponse || verifyResponse.status !== 'ready') {
+        throw new Error('Content script not ready after injection');
+      }
+    } catch (verifyError) {
+      console.warn('Content script verification failed:', verifyError);
+      // Continue anyway - might still work
+    }
+  } catch (injectionError) {
+    console.error('Script injection error:', injectionError);
+    throw new Error('Failed to inject content scripts. Please refresh the page.');
   }
 }
 
@@ -140,12 +180,18 @@ function displayScanResult(result) {
     resultBadge.textContent = result.usedAI ? 'AI: DANGER' : 'DANGER';
     resultBadge.className = 'result-badge';
     resultMessage.textContent = result.message || 'Multiple scam indicators detected. Avoid this page.';
-  } else {
+  } else if (result.status === 'error') {
     scanResult.classList.add('warning');
     resultText.textContent = 'Scan Error';
     resultBadge.textContent = 'ERROR';
     resultBadge.className = 'result-badge';
     resultMessage.textContent = result.message || 'Unable to complete scan.';
+  } else {
+    scanResult.classList.add('warning');
+    resultText.textContent = 'Unknown Status';
+    resultBadge.textContent = 'UNKNOWN';
+    resultBadge.className = 'result-badge';
+    resultMessage.textContent = result.message || 'Unable to determine page status.';
   }
 
   resultUrl.textContent = result.url || 'Unknown URL';
