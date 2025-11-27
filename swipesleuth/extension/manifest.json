@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "SwipeSleuth Connector",
+  "version": "0.1.0",
+  "description": "Provide scam examples to SwipeSleuth and scan pages for suspicious content.",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "activeTab",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://your-site-domain.com/*",
+      "http://localhost:5173/*",
+      "http://localhost:3000/*"
+    ]
+  }
+}
+
