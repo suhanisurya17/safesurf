@@ -8,7 +8,7 @@ This guide will help you set up **Gemini AI** for enhanced scam detection in Sca
 - ✅ **Fast response times** (<2 seconds)
 - ✅ **Advanced pattern recognition** for scam detection
 - ✅ **Easy to set up** (just need an API key)
-
+ 
 ## Step 1: Get Your Free Gemini API Key
 
 1. **Visit Google AI Studio**: https://aistudio.google.com/app/apikey
