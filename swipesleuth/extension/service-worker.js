@@ -126,11 +126,19 @@ chrome.runtime.onInstalled.addListener(() => {
   });
   
   // Create context menu
-  chrome.contextMenus.create({
-    id: 'reportSuspicious',
-    title: 'Report suspicious message',
-    contexts: ['selection']
-  });
+  try {
+    chrome.contextMenus.create({
+      id: 'reportSuspicious',
+      title: 'Report suspicious message',
+      contexts: ['selection']
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Context menu creation error:', chrome.runtime.lastError);
+      }
+    });
+  } catch (error) {
+    console.error('Error creating context menu:', error);
+  }
 });
 
 // Handle context menu clicks
@@ -158,7 +166,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 // Message handler
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || !msg.type) return false;
+  if (!msg || !msg.type) {
+    return false;
+  }
+  
+  console.log('[Service Worker] Received message:', msg.type);
   
   switch (msg.type) {
     case 'GET_EXAMPLES':
@@ -166,6 +178,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const examples = result.examples || SEED_EXAMPLES;
         const reported = result.reported || [];
         const allExamples = [...examples, ...reported];
+        
+        console.log('[Service Worker] Sending', allExamples.length, 'examples');
         
         sendResponse({
           type: 'RESPONSE_EXAMPLES',
@@ -186,11 +200,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             payload: indicators,
             requestId: msg.requestId
           });
+        } else {
+          sendResponse({
+            type: 'SCAN_RESULT',
+            payload: { error: 'No active tab' },
+            requestId: msg.requestId
+          });
         }
       });
       return true;
       
     default:
+      console.warn('[Service Worker] Unknown message type:', msg.type);
       return false;
   }
 });

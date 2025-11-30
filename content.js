@@ -299,7 +299,7 @@ function checkContent(indicators) {
   commonErrors.forEach(error => {
     if (bodyText.includes(error)) {
       indicators.warnings.push('Possible spelling errors detected');
-      break;
+      
     }
   });
 }

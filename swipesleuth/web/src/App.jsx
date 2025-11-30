@@ -6,13 +6,17 @@ import { updateLevel, updateStreak } from './utils/scoring';
 // API to get examples from extension or fallback
 async function getExamples() {
   // Try to get from extension first
-  if (window.swipesleuthAPI) {
+  if (window.swipesleuthAPI && typeof window.swipesleuthAPI.requestExamples === 'function') {
     try {
+      console.log('[App] Requesting examples from extension...');
       const examples = await window.swipesleuthAPI.requestExamples();
-      return examples;
+      console.log('[App] Received', examples?.length || 0, 'examples from extension');
+      return examples || [];
     } catch (error) {
-      console.warn('Extension not available, using fallback:', error);
+      console.warn('[App] Extension request failed:', error);
     }
+  } else {
+    console.warn('[App] Extension API not available');
   }
   
   // Fallback: return empty array (extension should provide data)
@@ -38,12 +42,27 @@ function App() {
   const loadExamples = async () => {
     setLoading(true);
     try {
+      // Wait a bit for content script to inject API
+      let retries = 0;
+      while (!window.swipesleuthAPI && retries < 10) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        retries++;
+      }
+      
       const examples = await getExamples();
-      // Shuffle cards
-      const shuffled = [...examples].sort(() => Math.random() - 0.5);
-      setCards(shuffled);
+      
+      if (examples && examples.length > 0) {
+        // Shuffle cards
+        const shuffled = [...examples].sort(() => Math.random() - 0.5);
+        setCards(shuffled);
+        console.log('[App] Loaded', shuffled.length, 'cards');
+      } else {
+        console.warn('[App] No examples received');
+        setCards([]);
+      }
     } catch (error) {
       console.error('Failed to load examples:', error);
+      setCards([]);
     } finally {
       setLoading(false);
     }
@@ -99,7 +118,45 @@ function App() {
       <div className="min-h-screen flex items-center justify-center text-white">
         <div className="text-center">
           <div className="text-2xl mb-4">Loading examples...</div>
-          <div className="text-sm">Make sure the SwipeSleuth extension is installed and enabled</div>
+          <div className="text-sm mb-2">Make sure the SwipeSleuth extension is installed and enabled</div>
+          {!window.swipesleuthAPI && (
+            <div className="text-xs text-yellow-200 mt-2">
+              Waiting for extension connection...
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (cards.length === 0 && !loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        <div className="text-center max-w-md">
+          <div className="text-2xl mb-4">No examples available</div>
+          <div className="text-sm mb-4">
+            {!window.swipesleuthAPI ? (
+              <div>
+                <p className="mb-2">Extension not detected. Please:</p>
+                <ol className="list-decimal list-inside text-left space-y-1">
+                  <li>Install the SwipeSleuth extension</li>
+                  <li>Reload this page</li>
+                  <li>Make sure extension is enabled</li>
+                </ol>
+              </div>
+            ) : (
+              <div>
+                <p>Extension detected but no examples received.</p>
+                <p className="mt-2">Try clicking "New Game" or check the extension popup.</p>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={loadExamples}
+            className="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 transition"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
