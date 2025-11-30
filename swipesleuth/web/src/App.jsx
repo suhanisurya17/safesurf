@@ -3,6 +3,28 @@ import SwipeDeck from './components/SwipeDeck';
 import Scoreboard from './components/Scoreboard';
 import { updateLevel, updateStreak } from './utils/scoring';
 
+// Fallback seed data for debugging
+const FALLBACK_EXAMPLES = [
+  {
+    id: 'easy-1',
+    title: 'You Won $1,000,000!',
+    text: 'Congratulations! You have been selected as the winner of $1,000,000. Click here to claim your prize immediately!',
+    url: 'http://fake-lottery-scam.com',
+    redFlags: ['Too good to be true offer', 'Urgent action required'],
+    difficulty: 'easy',
+    isScam: true
+  },
+  {
+    id: 'easy-2',
+    title: 'Legitimate Bank Statement',
+    text: 'Your monthly statement is ready. Log in to your account at https://chase.com to view it.',
+    url: 'https://chase.com',
+    redFlags: [],
+    difficulty: 'easy',
+    isScam: false
+  }
+];
+
 // API to get examples from extension or fallback
 async function getExamples() {
   // Try to get from extension first
@@ -11,16 +33,19 @@ async function getExamples() {
       console.log('[App] Requesting examples from extension...');
       const examples = await window.swipesleuthAPI.requestExamples();
       console.log('[App] Received', examples?.length || 0, 'examples from extension');
-      return examples || [];
+      if (examples && examples.length > 0) {
+        return examples;
+      }
     } catch (error) {
       console.warn('[App] Extension request failed:', error);
     }
   } else {
     console.warn('[App] Extension API not available');
   }
-  
-  // Fallback: return empty array (extension should provide data)
-  return [];
+
+  // Fallback: use demo data for development
+  console.log('[App] Using fallback demo data');
+  return FALLBACK_EXAMPLES;
 }
 
 function App() {
